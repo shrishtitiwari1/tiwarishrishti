@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Classroom Rating System</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050f;
+  --bg2: #070d1e;
+  --panel: #0b1529;
+  --panel2: #0f1e38;
+  --border: #1b3a70;
+  --border2: #0f2548;
+  --accent: #00e5ff;
+  --accent2: #ff4757;
+  --accent3: #2ed573;
+  --warn: #ffa502;
+  --gold: #ffd700;
+  --purple: #a855f7;
+  --text: #cde4ff;
+  --dim: #4a6fa0;
+  --dim2: #2a4060;
+  --dot-r: 14px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; min-height:100vh; overflow-x:hidden; }
+
+body {
+  background: var(--bg);
+  font-family: 'Exo 2', sans-serif;
+  color: var(--text);
+  background-image:
+    radial-gradient(ellipse 80% 40% at 10% 0%, rgba(0,100,255,0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(168,85,247,0.06) 0%, transparent 70%);
+}
+
+/* ── PAGES ── */
+.page { display:none; min-height:100vh; animation: fadeIn 0.5s ease; }
+.page.active { display:flex; flex-direction:column; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── GRID BACKGROUND ── */
+.grid-bg {
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 50px, rgba(0,229,255,0.02) 50px, rgba(0,229,255,0.02) 51px),
+    repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(0,229,255,0.02) 50px, rgba(0,229,255,0.02) 51px);
+}
+
+/* ── HEADER ── */
+.site-header {
+  text-align:center; padding: 36px 20px 20px;
+  position:relative; z-index:1;
+}
+.brand {
+  font-family:'Orbitron', sans-serif;
+  font-size: clamp(16px,3.5vw,28px); font-weight:900;
+  letter-spacing:5px; color: var(--accent);
+  text-shadow: 0 0 30px rgba(0,229,255,0.5);
+  animation: glow 3s ease-in-out infinite;
+}
+@keyframes glow {
+  0%,100% { text-shadow: 0 0 20px rgba(0,229,255,0.4); }
+  50% { text-shadow: 0 0 50px rgba(0,229,255,0.9), 0 0 100px rgba(0,229,255,0.2); }
+}
+.brand-sub { font-size:11px; letter-spacing:5px; color:var(--dim); text-transform:uppercase; margin-top:6px; }
+
+/* ── STEP INDICATOR ── */
+.steps {
+  display:flex; justify-content:center; align-items:center;
+  gap:0; margin:16px auto; max-width:520px; padding:0 20px;
+  position:relative; z-index:1;
+}
+.step-item {
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  flex:1; position:relative;
+}
+.step-item::after {
+  content:''; position:absolute;
+  top:var(--dot-r); left:calc(50% + var(--dot-r)); right:calc(-50% + var(--dot-r));
+  height:2px; background:var(--dim2); transition:background 0.4s;
+}
+.step-item:last-child::after { display:none; }
+.step-item.done::after { background: var(--accent); }
+.step-dot {
+  width:28px; height:28px; border-radius:50%;
+  border:2px solid var(--dim2);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Orbitron',sans-serif; font-size:10px; font-weight:700;
+  color:var(--dim); background:var(--bg2); transition:all 0.4s;
+}
+.step-item.active .step-dot { border-color:var(--accent); color:var(--accent); background:rgba(0,229,255,0.1); box-shadow:0 0 12px rgba(0,229,255,0.4); }
+.step-item.done .step-dot { border-color:var(--accent3); color:var(--bg); background:var(--accent3); }
+.step-lbl { font-size:9px; letter-spacing:1px; color:var(--dim); text-transform:uppercase; }
+.step-item.active .step-lbl { color:var(--accent); }
+.step-item.done .step-lbl { color:var(--accent3); }
+
+/* ── FORM CARD ── */
+.form-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:16px; padding:32px 28px;
+  max-width:520px; width:100%; margin:0 auto;
+  position:relative; z-index:1;
+  box-shadow:0 0 60px rgba(0,100,255,0.08), inset 0 1px 0 rgba(0,229,255,0.05);
+}
+.form-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg, transparent, var(--accent), transparent);
+  border-radius:16px 16px 0 0;
+}
+.card-title { font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; letter-spacing:3px; color:var(--accent); margin-bottom:6px; }
+.card-sub { font-size:13px; color:var(--dim); letter-spacing:1px; margin-bottom:24px; }
+
+/* ── INPUTS ── */
+.field { margin-bottom:16px; }
+.field label { display:block; font-size:11px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; margin-bottom:6px; }
+.field input, .field select {
+  width:100%; padding:12px 14px;
+  background:rgba(0,0,0,0.4); border:1px solid var(--border2);
+  border-radius:8px; color:var(--text);
+  font-family:'Exo 2',sans-serif; font-size:14px;
+  transition:border-color 0.3s, box-shadow 0.3s; outline:none;
+}
+.field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,229,255,0.08); }
+.field select option { background:var(--panel); }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+/* ── BUTTONS ── */
+.btn {
+  width:100%; padding:14px; border:none; border-radius:8px;
+  font-family:'Orbitron',sans-serif; font-size:12px;
+  letter-spacing:3px; font-weight:700; cursor:pointer; transition:all 0.3s;
+}
+.btn-primary { background:linear-gradient(135deg, rgba(0,229,255,0.15), rgba(0,229,255,0.05)); border:1px solid var(--accent); color:var(--accent); }
+.btn-primary:hover { background:rgba(0,229,255,0.2); box-shadow:0 0 20px rgba(0,229,255,0.3); transform:translateY(-1px); }
+.btn-danger { background:linear-gradient(135deg, rgba(255,71,87,0.15), rgba(255,71,87,0.05)); border:1px solid var(--accent2); color:var(--accent2); }
+.btn-danger:hover { background:rgba(255,71,87,0.2); box-shadow:0 0 20px rgba(255,71,87,0.3); }
+.btn-success { background:linear-gradient(135deg, rgba(46,213,115,0.15), rgba(46,213,115,0.05)); border:1px solid var(--accent3); color:var(--accent3); }
+.btn-success:hover { background:rgba(46,213,115,0.2); box-shadow:0 0 20px rgba(46,213,115,0.3); }
+.btn-sm { width:auto; padding:9px 20px; font-size:10px; letter-spacing:2px; }
+.link-btn { background:none; border:none; cursor:pointer; color:var(--accent); font-size:13px; font-family:'Exo 2',sans-serif; text-decoration:underline; transition:color 0.2s; }
+.link-btn:hover { color:#fff; }
+.err-msg { color:var(--accent2); font-size:12px; margin-top:8px; letter-spacing:1px; display:none; }
+
+/* ── TEACHER CARDS ── */
+.teacher-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+@media(max-width:480px) { .teacher-grid { grid-template-columns:1fr; } }
+.teacher-card {
+  background:rgba(0,0,0,0.3); border:1px solid var(--border2);
+  border-radius:10px; padding:14px 12px;
+  cursor:pointer; transition:all 0.3s; text-align:center;
+}
+.teacher-card:hover { border-color:var(--accent); background:rgba(0,229,255,0.04); transform:translateY(-2px); }
+.teacher-card.selected { border-color:var(--accent); background:rgba(0,229,255,0.08); box-shadow:0 0 16px rgba(0,229,255,0.2); }
+.teacher-avatar { font-size:36px; margin-bottom:8px; }
+.teacher-name { font-family:'Orbitron',sans-serif; font-size:11px; font-weight:700; color:var(--text); letter-spacing:1px; }
+.teacher-subject { font-size:11px; color:var(--dim); margin-top:3px; }
+.teacher-dept { font-size:10px; color:var(--dim2); margin-top:2px; letter-spacing:1px; }
+.selected-badge { display:inline-block; background:rgba(0,229,255,0.15); border:1px solid var(--accent); border-radius:4px; font-size:9px; font-family:'Orbitron',sans-serif; color:var(--accent); padding:2px 6px; margin-top:6px; letter-spacing:1px; }
+
+/* ── ANALYZER PAGE ── */
+.analyzer-wrap { max-width:900px; width:100%; margin:0 auto; padding:0 16px 30px; position:relative; z-index:1; }
+.analyzer-grid { display:grid; grid-template-columns:1fr 300px; gap:16px; }
+@media(max-width:720px) { .analyzer-grid { grid-template-columns:1fr; } }
+.a-panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px; position:relative; overflow:hidden; }
+.a-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--accent), transparent); }
+.a-title { font-family:'Orbitron',sans-serif; font-size:10px; letter-spacing:3px; color:var(--accent); margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.a-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+
+/* MIC */
+.mic-wrap { display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:16px; }
+#micBtn {
+  width:80px; height:80px; border-radius:50%;
+  border:3px solid var(--accent); background:rgba(0,229,255,0.07);
+  color:var(--accent); font-size:32px; cursor:pointer; transition:all 0.3s;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 0 20px rgba(0,229,255,0.15);
+  position:relative; will-change:transform;
+}
+#micBtn:hover { background:rgba(0,229,255,0.15); transform:scale(1.05); }
+#micBtn.recording { border-color:var(--accent2); color:var(--accent2); background:rgba(255,71,87,0.1); animation:mic-red 1s ease-in-out infinite; }
+@keyframes mic-red { 0%,100% { box-shadow:0 0 20px rgba(255,71,87,0.3); } 50% { box-shadow:0 0 50px rgba(255,71,87,0.7), 0 0 80px rgba(255,71,87,0.2); } }
+.pulse-ring { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(255,71,87,0.4); animation:pulse-out 1.5s ease-out infinite; opacity:0; display:none; will-change:transform, opacity; }
+.pulse-ring:nth-child(2) { animation-delay:0.5s; }
+.pulse-ring:nth-child(3) { animation-delay:1s; }
+#micBtn.recording .pulse-ring { display:block; }
+@keyframes pulse-out { 0% { transform:scale(1); opacity:0.6; } 100% { transform:scale(2.2); opacity:0; } }
+#micStatus { font-size:12px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; }
+#recTimer { font-family:'Orbitron',sans-serif; font-size:22px; color:var(--accent2); letter-spacing:4px; display:none; }
+
+/* CANVASES */
+canvas.viz { width:100%; border-radius:8px; background:rgba(0,0,0,0.4); border:1px solid var(--border2); display:block; }
+canvas#pitchGraph { height:55px; }
+canvas#noiseCv { height:28px; }
+canvas#waveCV { height:70px; }
+
+/* METRICS */
+.mrow { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
+.mbox { background:rgba(0,0,0,0.3); border:1px solid var(--border2); border-radius:8px; padding:10px 8px; text-align:center; }
+.mlabel { font-size:9px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; margin-bottom:4px; }
+.mval { font-family:'Orbitron',sans-serif; font-size:18px; font-weight:700; color:var(--accent); }
+.munit { font-size:10px; color:var(--dim); }
+
+/* GAUGES */
+.gbar-wrap { margin-bottom:10px; }
+.gbar-label { font-size:10px; letter-spacing:2px; color:var(--dim); text-transform:uppercase; margin-bottom:4px; display:flex; justify-content:space-between; }
+.gbar { height:7px; background:rgba(0,0,0,0.5); border-radius:4px; border:1px solid var(--border2); overflow:hidden; }
+.gfill { height:100%; border-radius:4px; transition:width 0.2s ease; width:0%; }
+
+/* INTENTION */
+.intent-box { background:rgba(0,0,0,0.4); border-radius:10px; border:1px solid var(--border2); padding:16px; text-align:center; margin-bottom:12px; min-height:110px; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:border-color 0.5s; }
+.intent-emoji { font-size:36px; margin-bottom:6px; }
+.intent-lbl { font-family:'Orbitron',sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; transition:color 0.3s; }
+.intent-desc { font-size:11px; color:var(--dim); margin-top:4px; letter-spacing:1px; }
+
+/* SCORES mini */
+.score-trio { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:12px; }
+.score-mini { text-align:center; padding:8px 4px; border-radius:6px; border:1px solid; }
+.score-mini .sm-icon { font-size:14px; }
+.score-mini .sm-lbl { font-size:8px; letter-spacing:1px; text-transform:uppercase; margin-top:2px; }
+.score-mini .sm-val { font-family:'Orbitron',sans-serif; font-size:16px; font-weight:700; margin-top:2px; }
+
+/* EMOTION PILLS */
+.epills { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px; }
+.epill { display:flex; align-items:center; gap:6px; background:rgba(0,0,0,0.3); border:1px solid var(--border2); border-radius:6px; padding:7px 8px; transition:all 0.3s; }
+.epill.on { border-color:var(--accent); background:rgba(0,229,255,0.07); }
+.epill .edot { width:7px; height:7px; border-radius:50%; background:var(--dim); transition:background 0.3s; flex-shrink:0; }
+.epill.on .edot { background:var(--accent); box-shadow:0 0 6px var(--accent); }
+.epill .ename { font-size:12px; font-weight:600; flex:1; }
+.epill .epct { font-family:'Orbitron',sans-serif; font-size:11px; color:var(--dim); }
+.epill.on .epct { color:var(--accent); }
+
+/* SCORE CIRCLE */
+.score-circle { width:100px; height:100px; border-radius:50%; border:4px solid var(--border2); display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0 auto 12px; transition:all 0.5s; }
+.score-num { font-family:'Orbitron',sans-serif; font-size:28px; font-weight:900; }
+.score-of { font-size:10px; letter-spacing:2px; color:var(--dim); }
+
+/* LOG */
+.log-wrap { max-height:120px; overflow-y:auto; display:flex; flex-direction:column; gap:3px; }
+.log-row { display:flex; align-items:center; gap:6px; background:rgba(0,0,0,0.3); border-radius:4px; padding:5px 8px; font-size:11px; border-left:3px solid var(--dim2); animation:sli 0.3s ease; }
+@keyframes sli { from {opacity:0;transform:translateX(-8px);} to {opacity:1;transform:translateX(0);} }
+.lt { color:var(--dim); font-size:10px; min-width:42px; }
+.ltag { font-family:'Orbitron',sans-serif; font-size:9px; padding:1px 5px; border-radius:3px; font-weight:700; }
+.ts { background:rgba(46,213,115,0.15); color:var(--accent3); border:1px solid rgba(46,213,115,0.3); }
+.tt { background:rgba(255,165,2,0.15); color:var(--warn); border:1px solid rgba(255,165,2,0.3); }
+.tr { background:rgba(255,71,87,0.15); color:var(--accent2); border:1px solid rgba(255,71,87,0.3); }
+.tn { background:rgba(74,111,160,0.2); color:var(--dim); border:1px solid var(--border2); }
+
+/* TEACHER INFO STRIP */
+.teacher-strip { display:flex; align-items:center; gap:12px; background:rgba(0,0,0,0.3); border:1px solid var(--border2); border-radius:8px; padding:10px 14px; margin-bottom:16px; }
+.ts-avatar { font-size:28px; }
+.ts-name { font-family:'Orbitron',sans-serif; font-size:12px; color:var(--text); letter-spacing:1px; }
+.ts-sub { font-size:11px; color:var(--dim); }
+
+/* ── THANK YOU PAGE ── */
+.ty-wrap { max-width:600px; margin:0 auto; padding:20px 16px 40px; text-align:center; position:relative; z-index:1; }
+.ty-trophy { font-size:80px; animation:trophy-bounce 1s ease; }
+@keyframes trophy-bounce { 0%,100% { transform:translateY(0); } 30% { transform:translateY(-20px) scale(1.1); } 60% { transform:translateY(-8px); } }
+.ty-headline { font-family:'Orbitron',sans-serif; font-size:clamp(20px,5vw,36px); font-weight:900; letter-spacing:4px; margin:16px 0 8px; background:linear-gradient(135deg, var(--accent), var(--purple)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.ty-sub { font-size:14px; color:var(--dim); letter-spacing:2px; margin-bottom:30px; }
+.result-card { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:28px; margin-bottom:20px; position:relative; overflow:hidden; }
+.result-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg, transparent, var(--gold), transparent); }
+.final-score-ring { width:130px; height:130px; border-radius:50%; margin:0 auto 20px; display:flex; flex-direction:column; align-items:center; justify-content:center; border:5px solid var(--gold); box-shadow:0 0 40px rgba(255,215,0,0.3), inset 0 0 20px rgba(255,215,0,0.05); animation:ring-glow 2s ease-in-out infinite; }
+@keyframes ring-glow { 0%,100% { box-shadow:0 0 30px rgba(255,215,0,0.3); } 50% { box-shadow:0 0 60px rgba(255,215,0,0.6), 0 0 100px rgba(255,215,0,0.2); } }
+.final-num { font-family:'Orbitron',sans-serif; font-size:42px; font-weight:900; color:var(--gold); }
+.final-of { font-size:12px; letter-spacing:2px; color:var(--dim); }
+.result-trio { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:20px 0; }
+.rt-box { border-radius:8px; padding:12px 8px; text-align:center; border:1px solid; }
+.rt-icon { font-size:22px; }
+.rt-lbl { font-size:9px; letter-spacing:2px; text-transform:uppercase; margin-top:4px; }
+.rt-val { font-family:'Orbitron',sans-serif; font-size:20px; font-weight:700; margin-top:4px; }
+.feedback-msg { font-size:15px; line-height:1.7; color:var(--text); background:rgba(0,0,0,0.3); border-radius:8px; padding:16px; border-left:3px solid var(--gold); text-align:left; margin:16px 0; }
+.student-info-bar { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-bottom:20px; }
+.info-tag { background:rgba(0,229,255,0.07); border:1px solid var(--border); border-radius:20px; padding:5px 14px; font-size:12px; letter-spacing:1px; color:var(--text); }
+.confetti-bar { display:flex; justify-content:center; gap:4px; margin:16px 0; flex-wrap:wrap; }
+.conf-star { font-size:20px; animation:star-spin 0.5s ease both; }
+@keyframes star-spin { from { transform:scale(0) rotate(-180deg); opacity:0; } to { transform:scale(1) rotate(0); opacity:1; } }
+
+/* LIVE BADGE */
+.live-badge { display:inline-flex; align-items:center; gap:4px; font-size:9px; letter-spacing:2px; color:var(--accent2); font-family:'Orbitron',sans-serif; font-weight:700; }
+.live-dot { width:5px; height:5px; border-radius:50%; background:var(--accent2); animation:blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* MISC */
+.hidden { display:none !important; }
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.page-center { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 16px 30px; }
+.divider { height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:16px 0; }
+.btn-row { display:flex; gap:10px; margin-top:16px; }
+.mt8 { margin-top:8px; }
+.mb12 { margin-bottom:12px; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 1 — REGISTRATION
+══════════════════════════════════════════════ -->
+<div class="page active" id="page-register">
+  <div class="site-header">
+    <div class="brand">🎓 AI CLASSROOM RATER</div>
+    <div class="brand-sub">Smart Voice · Emotion · Intention Analysis System</div>
+  </div>
+  <div class="steps">
+    <div class="step-item active"><div class="step-dot">1</div><div class="step-lbl">Register</div></div>
+    <div class="step-item"><div class="step-dot">2</div><div class="step-lbl">Login</div></div>
+    <div class="step-item"><div class="step-dot">3</div><div class="step-lbl">Teacher</div></div>
+    <div class="step-item"><div class="step-dot">4</div><div class="step-lbl">Analyze</div></div>
+    <div class="step-item"><div class="step-dot">✓</div><div class="step-lbl">Done</div></div>
+  </div>
+  <div class="page-center">
+    <div class="form-card">
+      <div class="card-title">📋 CREATE ACCOUNT</div>
+      <div class="card-sub">Join the smart classroom feedback network</div>
+      <div class="field-row">
+        <div class="field">
+          <label for="reg-first">First Name</label>
+          <input id="reg-first" type="text" placeholder="John" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label for="reg-last">Last Name</label>
+          <input id="reg-last" type="text" placeholder="Doe" autocomplete="family-name">
+        </div>
+      </div>
+      <div class="field">
+        <label for="reg-email">Email Address</label>
+        <input id="reg-email" type="email" placeholder="you@university.edu" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="reg-sid">Student ID</label>
+        <input id="reg-sid" type="text" placeholder="STU-2024-XXXX">
+      </div>
+      <div class="field">
+        <label for="reg-dept">Department</label>
+        <select id="reg-dept">
+          <option value="">— Select Department —</option>
+          <option>Computer Science</option>
+          <option>Mathematics</option>
+          <option>Physics</option>
+          <option>Chemistry</option>
+          <option>Biology</option>
+          <option>Engineering</option>
+          <option>Business</option>
+          <option>Psychology</option>
+          <option>Literature</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="reg-pass">Password</label>
+        <input id="reg-pass" type="password" placeholder="Min 6 characters" autocomplete="new-password">
+      </div>
+      <div class="err-msg" id="reg-err">⚠ Please fill in all fields correctly.</div>
+      <button class="btn btn-primary mt8" onclick="doRegister()">CREATE ACCOUNT →</button>
+      <div style="text-align:center; margin-top:14px; font-size:13px; color:var(--dim);">
+        Already registered? <button class="link-btn" onclick="goTo('page-login', 1)">Sign in here</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 2 — LOGIN
+══════════════════════════════════════════════ -->
+<div class="page" id="page-login">
+  <div class="site-header">
+    <div class="brand">🎓 AI CLASSROOM RATER</div>
+    <div class="brand-sub">Smart Voice · Emotion · Intention Analysis System</div>
+  </div>
+  <div class="steps">
+    <div class="step-item done"><div class="step-dot">✓</div><div class="step-lbl">Register</div></div>
+    <div class="step-item active"><div class="step-dot">2</div><div class="step-lbl">Login</div></div>
+    <div class="step-item"><div class="step-dot">3</div><div class="step-lbl">Teacher</div></div>
+    <div class="step-item"><div class="step-dot">4</div><div class="step-lbl">Analyze</div></div>
+    <div class="step-item"><div class="step-dot">✓</div><div class="step-lbl">Done</div></div>
+  </div>
+  <div class="page-center">
+    <div class="form-card">
+      <div class="card-title">🔐 SECURE LOGIN</div>
+      <div class="card-sub">Access your feedback dashboard</div>
+      <div class="field">
+        <label for="log-email">Email Address</label>
+        <input id="log-email" type="email" placeholder="you@university.edu" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="log-pass">Password</label>
+        <input id="log-pass" type="password" placeholder="Your password" autocomplete="current-password">
+      </div>
+      <div class="err-msg" id="log-err">⚠ Invalid email or password.</div>
+      <button class="btn btn-primary mt8" onclick="doLogin()">ACCESS SYSTEM →</button>
+      <div style="text-align:center; margin-top:14px; font-size:13px; color:var(--dim);">
+        New here? <button class="link-btn" onclick="goTo('page-register', 0)">Create account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 3 — TEACHER SELECT
+══════════════════════════════════════════════ -->
+<div class="page" id="page-teacher">
+  <div class="site-header">
+    <div class="brand">🎓 AI CLASSROOM RATER</div>
+    <div class="brand-sub">Smart Voice · Emotion · Intention Analysis System</div>
+  </div>
+  <div class="steps">
+    <div class="step-item done"><div class="step-dot">✓</div><div class="step-lbl">Register</div></div>
+    <div class="step-item done"><div class="step-dot">✓</div><div class="step-lbl">Login</div></div>
+    <div class="step-item active"><div class="step-dot">3</div><div class="step-lbl">Teacher</div></div>
+    <div class="step-item"><div class="step-dot">4</div><div class="step-lbl">Analyze</div></div>
+    <div class="step-item"><div class="step-dot">✓</div><div class="step-lbl">Done</div></div>
+  </div>
+  <div class="page-center">
+    <div class="form-card" style="max-width:640px;">
+      <div class="card-title">👨‍🏫 SELECT TEACHER</div>
+      <div class="card-sub">Choose the instructor you want to rate</div>
+      <div class="teacher-grid" id="teacher-grid"></div>
+      <div class="err-msg" id="teacher-err">⚠ Please select a teacher to continue.</div>
+      <button class="btn btn-primary" onclick="doSelectTeacher()">PROCEED TO ANALYSIS →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 4 — ANALYZER
+══════════════════════════════════════════════ -->
+<div class="page" id="page-analyze">
+  <div class="site-header">
+    <div class="brand">🎓 AI CLASSROOM RATER</div>
+    <div class="brand-sub">Smart Voice · Emotion · Intention Analysis System</div>
+  </div>
+  <div class="steps">
+    <div class="step-item done"><div class="step-dot">✓</div><div class="step-lbl">Register</div></div>
+    <div class="step-item done"><div class="step-dot">✓</div><div class="step-lbl">Login</div></div>
+    <div class="step-item done"><div class="step-dot">✓</div><div class="step-lbl">Teacher</div></div>
+    <div class="step-item active"><div class="step-dot">4</div><div class="step-lbl">Analyze</div></div>
+    <div class="step-item"><div class="step-dot">✓</div><div class="step-lbl">Done</div></div>
+  </div>
+  <div class="analyzer-wrap">
+    <!-- Teacher strip -->
+    <div class="teacher-strip">
+      <div class="ts-avatar" id="analyze-avatar">👨‍🏫</div>
+      <div>
+        <div class="ts-name" id="analyze-name">Teacher Name</div>
+        <div class="ts-sub" id="analyze-subject">Subject · Department</div>
+      </div>
+      <div style="margin-left:auto;">
+        <span class="live-badge"><span class="live-dot"></span> LIVE ANALYSIS</span>
+      </div>
+    </div>
+
+    <div class="analyzer-grid">
+      <!-- LEFT COLUMN -->
+      <div style="display:flex; flex-direction:column; gap:14px;">
+
+        <!-- Mic & Waveform -->
+        <div class="a-panel">
+          <div class="a-title">🎙 VOICE CAPTURE</div>
+          <div class="mic-wrap">
+            <button id="micBtn" aria-label="Start recording" onclick="toggleMic()">
+              <div class="pulse-ring"></div>
+              <div class="pulse-ring"></div>
+              <div class="pulse-ring"></div>
+              🎤
+            </button>
+            <div id="micStatus">TAP TO BEGIN RECORDING</div>
+            <div id="recTimer">00:00</div>
+          </div>
+          <canvas id="waveCV" class="viz" height="70" aria-hidden="true"></canvas>
+          <div class="mrow">
+            <div class="mbox"><div class="mlabel">Volume</div><div class="mval" id="m-vol">0</div><div class="munit">dB</div></div>
+            <div class="mbox"><div class="mlabel">Pitch</div><div class="mval" id="m-pitch">—</div><div class="munit">Hz</div></div>
+            <div class="mbox"><div class="mlabel">Clarity</div><div class="mval" id="m-clarity">—</div><div class="munit">%</div></div>
+          </div>
+        </div>
+
+        <!-- Pitch Graph -->
+        <div class="a-panel">
+          <div class="a-title">📈 PITCH ANALYSIS</div>
+          <canvas id="pitchGraph" class="viz" height="55" aria-hidden="true"></canvas>
+          <div style="margin-top:10px;">
+            <div class="gbar-wrap">
+              <div class="gbar-label"><span>TONE STABILITY</span><span id="g-tone">0%</span></div>
+              <div class="gbar"><div class="gfill" id="gf-tone" style="background:var(--accent);"></div></div>
+            </div>
+            <div class="gbar-wrap">
+              <div class="gbar-label"><span>PACE CONSISTENCY</span><span id="g-pace">0%</span></div>
+              <div class="gbar"><div class="gfill" id="gf-pace" style="background:var(--accent3);"></div></div>
+            </div>
+            <div class="gbar-wrap">
+              <div class="gbar-label"><span>ENERGY LEVEL</span><span id="g-energy">0%</span></div>
+              <div class="gbar"><div class="gfill" id="gf-energy" style="background:var(--warn);"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Noise Monitor -->
+        <div class="a-panel">
+          <div class="a-title">🔊 NOISE MONITOR</div>
+          <canvas id="noiseCv" class="viz" height="28" aria-hidden="true"></canvas>
+          <div class="mrow" style="margin-top:10px;">
+            <div class="mbox"><div class="mlabel">Ambient</div><div class="mval" id="m-ambient" style="color:var(--accent3);">LOW</div></div>
+            <div class="mbox"><div class="mlabel">Peaks</div><div class="mval" id="m-peaks">0</div></div>
+            <div class="mbox"><div class="mlabel">SNR</div><div class="mval" id="m-snr">—</div><div class="munit">dB</div></div>
+          </div>
+        </div>
+
+        <!-- Event Log -->
+        <div class="a-panel">
+          <div class="a-title">📋 SESSION LOG</div>
+          <div class="log-wrap" id="logWrap">
+            <div class="log-row"><span class="lt">00:00</span><span class="ltag tn">INFO</span><span>Session initialized — waiting for input</span></div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="submitAnalysis()">SUBMIT RATING →</button>
+          <button class="btn btn-danger btn-sm" onclick="resetAnalysis()" style="width:auto; padding:14px 20px;">RESET</button>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex; flex-direction:column; gap:14px;">
+
+        <!-- Intention -->
+        <div class="a-panel">
+          <div class="a-title">🧠 INTENTION AI</div>
+          <div class="intent-box" id="intentBox">
+            <div class="intent-emoji" id="intentEmoji">🔍</div>
+            <div class="intent-lbl" id="intentLbl" style="color:var(--dim);">AWAITING INPUT</div>
+            <div class="intent-desc" id="intentDesc">Start recording to analyze</div>
+          </div>
+        </div>
+
+        <!-- Score Circle -->
+        <div class="a-panel" style="text-align:center;">
+          <div class="a-title">⭐ LIVE SCORE</div>
+          <div class="score-circle" id="scoreCircle">
+            <div class="score-num" id="scoreNum" style="color:var(--dim);">—</div>
+            <div class="score-of">/ 100</div>
+          </div>
+          <div class="score-trio">
+            <div class="score-mini" style="border-color:rgba(0,229,255,0.3); background:rgba(0,229,255,0.05);">
+              <div class="sm-icon">🗣</div>
+              <div class="sm-lbl">Voice</div>
+              <div class="sm-val" id="sc-voice" style="color:var(--accent);">—</div>
+            </div>
+            <div class="score-mini" style="border-color:rgba(46,213,115,0.3); background:rgba(46,213,115,0.05);">
+              <div class="sm-icon">😊</div>
+              <div class="sm-lbl">Emotion</div>
+              <div class="sm-val" id="sc-emotion" style="color:var(--accent3);">—</div>
+            </div>
+            <div class="score-mini" style="border-color:rgba(255,165,2,0.3); background:rgba(255,165,2,0.05);">
+              <div class="sm-icon">⚡</div>
+              <div class="sm-lbl">Energy</div>
+              <div class="sm-val" id="sc-energy" style="color:var(--warn);">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emotions -->
+        <div class="a-panel">
+          <div class="a-title">💬 EMOTION MATRIX</div>
+          <div class="epills" id="epillsWrap">
+            <div class="epill" data-e="Confident"><div class="edot"></div><span class="ename">Confident</span><span class="epct">0%</span></div>
+            <div class="epill" data-e="Engaged"><div class="edot"></div><span class="ename">Engaged</span><span class="epct">0%</span></div>
+            <div class="epill" data-e="Enthusiastic"><div class="edot"></div><span class="ename">Enthusiastic</span><span class="epct">0%</span></div>
+            <div class="epill" data-e="Nervous"><div class="edot"></div><span class="ename">Nervous</span><span class="epct">0%</span></div>
+            <div class="epill" data-e="Monotone"><div class="edot"></div><span class="ename">Monotone</span><span class="epct">0%</span></div>
+            <div class="epill" data-e="Inspiring"><div class="edot"></div><span class="ename">Inspiring</span><span class="epct">0%</span></div>
+          </div>
+        </div>
+
+        <!-- Rating sliders -->
+        <div class="a-panel">
+          <div class="a-title">📝 MANUAL RATING</div>
+          <div id="sliders-wrap"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     PAGE 5 — THANK YOU / RESULTS
+══════════════════════════════════════════════ -->
+<div class="page" id="page-done">
+  <div class="site-header">
+    <div class="brand">🎓 AI CLASSROOM RATER</div>
+    <div class="brand-sub">Smart Voice · Emotion · Intention Analysis System</div>
+  </div>
+  <div class="ty-wrap">
+    <div class="ty-trophy">🏆</div>
+    <div class="ty-headline">ANALYSIS COMPLETE</div>
+    <div class="ty-sub">YOUR FEEDBACK HAS BEEN RECORDED</div>
+    <div class="student-info-bar" id="result-info-bar"></div>
+    <div class="result-card">
+      <div class="final-score-ring">
+        <div class="final-num" id="final-score">—</div>
+        <div class="final-of">/ 100</div>
+      </div>
+      <div class="confetti-bar" id="confetti-bar"></div>
+      <div class="result-trio">
+        <div class="rt-box" style="border-color:rgba(0,229,255,0.4); background:rgba(0,229,255,0.05);">
+          <div class="rt-icon">🗣</div>
+          <div class="rt-lbl" style="color:var(--accent);">Voice</div>
+          <div class="rt-val" id="rt-voice" style="color:var(--accent);">—</div>
+        </div>
+        <div class="rt-box" style="border-color:rgba(46,213,115,0.4); background:rgba(46,213,115,0.05);">
+          <div class="rt-icon">😊</div>
+          <div class="rt-lbl" style="color:var(--accent3);">Emotion</div>
+          <div class="rt-val" id="rt-emotion" style="color:var(--accent3);">—</div>
+        </div>
+        <div class="rt-box" style="border-color:rgba(255,215,0,0.4); background:rgba(255,215,0,0.05);">
+          <div class="rt-icon">⭐</div>
+          <div class="rt-lbl" style="color:var(--gold);">Overall</div>
+          <div class="rt-val" id="rt-overall" style="color:var(--gold);">—</div>
+        </div>
+      </div>
+      <div class="feedback-msg" id="feedback-msg">Processing your analysis...</div>
+      <button class="btn btn-primary" onclick="startOver()">📋 RATE ANOTHER TEACHER</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────
+   STATE
+───────────────────────────────────────────────────────── */
+const DB = {
+  users: JSON.parse(localStorage.getItem('cr_users') || '[]'),
+  currentUser: null,
+  selectedTeacher: null,
+};
+
+const TEACHERS = [
+  { id:1, avatar:'👨‍🏫', name:'Dr. Alan Moore', subject:'Algorithms & DS', dept:'COMPUTER SCIENCE' },
+  { id:2, avatar:'👩‍🏫', name:'Prof. Sarah Chen', subject:'Quantum Physics', dept:'PHYSICS' },
+  { id:3, avatar:'🧑‍🏫', name:'Dr. James Okafor', subject:'Linear Algebra', dept:'MATHEMATICS' },
+  { id:4, avatar:'👩‍🔬', name:'Dr. Priya Sharma', subject:'Organic Chemistry', dept:'CHEMISTRY' },
+  { id:5, avatar:'🧑‍💻', name:'Prof. Leo Torres', subject:'Machine Learning', dept:'AI & CS' },
+  { id:6, avatar:'👩‍🎓', name:'Dr. Amara Diallo', subject:'Cognitive Psych', dept:'PSYCHOLOGY' },
+];
+
+const INTENTS = [
+  { emoji:'🌟', lbl:'HIGHLY ENGAGED', desc:'Strong interest & participation', color:'var(--accent3)', border:'rgba(46,213,115,0.4)' },
+  { emoji:'🤔', lbl:'THOUGHTFUL', desc:'Deep analytical focus', color:'var(--accent)', border:'rgba(0,229,255,0.4)' },
+  { emoji:'😊', lbl:'POSITIVE', desc:'Enjoying the session', color:'var(--warn)', border:'rgba(255,165,2,0.4)' },
+  { emoji:'😐', lbl:'NEUTRAL', desc:'Passive attention', color:'var(--dim)', border:'var(--border2)' },
+  { emoji:'😴', lbl:'DISENGAGED', desc:'Low attention detected', color:'var(--accent2)', border:'rgba(255,71,87,0.4)' },
+  { emoji:'🚀', lbl:'MOTIVATED', desc:'High drive & energy', color:'var(--purple)', border:'rgba(168,85,247,0.4)' },
+];
+
+const RATING_CRITERIA = [
+  { id:'teaching', label:'Teaching Clarity', icon:'📚' },
+  { id:'engagement', label:'Student Engagement', icon:'🙋' },
+  { id:'knowledge', label:'Subject Knowledge', icon:'🧠' },
+  { id:'pace', label:'Pace & Delivery', icon:'⏱' },
+  { id:'helpfulness', label:'Helpfulness', icon:'🤝' },
+];
+
+let audioCtx = null, analyser = null, source = null, animFrame = null;
+let isRecording = false, timerInterval = null, recSeconds = 0;
+let pitchHistory = [], sessionLogs = [];
+let liveVoice = 0, liveEmotion = 0, liveEnergy = 0;
+let analysisInterval = null;
+let peakCount = 0;
+
+/* ─────────────────────────────────────────────────────────
+   NAVIGATION
+───────────────────────────────────────────────────────── */
+function goTo(pageId, activeStep) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ─────────────────────────────────────────────────────────
+   REGISTRATION
+───────────────────────────────────────────────────────── */
+function doRegister() {
+  const first = document.getElementById('reg-first').value.trim();
+  const last  = document.getElementById('reg-last').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const sid   = document.getElementById('reg-sid').value.trim();
+  const dept  = document.getElementById('reg-dept').value;
+  const pass  = document.getElementById('reg-pass').value;
+  const err   = document.getElementById('reg-err');
+
+  if (!first || !last || !email || !sid || !dept || pass.length < 6) {
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+
+  const user = { first, last, email, sid, dept, pass };
+  DB.users.push(user);
+  localStorage.setItem('cr_users', JSON.stringify(DB.users));
+  DB.currentUser = user;
+
+  // pre-fill login
+  document.getElementById('log-email').value = email;
+  goTo('page-login');
+}
+
+/* ─────────────────────────────────────────────────────────
+   LOGIN
+───────────────────────────────────────────────────────── */
+function doLogin() {
+  const email = document.getElementById('log-email').value.trim();
+  const pass  = document.getElementById('log-pass').value;
+  const err   = document.getElementById('log-err');
+
+  const user = DB.users.find(u => u.email === email && u.pass === pass);
+  if (!user) { err.style.display='block'; return; }
+  err.style.display='none';
+  DB.currentUser = user;
+  buildTeacherGrid();
+  goTo('page-teacher');
+}
+
+/* ─────────────────────────────────────────────────────────
+   TEACHER SELECTION
+───────────────────────────────────────────────────────── */
+function buildTeacherGrid() {
+  const grid = document.getElementById('teacher-grid');
+  grid.innerHTML = TEACHERS.map(t => `
+    <div class="teacher-card" id="tc-${t.id}" onclick="selectTeacher(${t.id})">
+      <div class="teacher-avatar">${t.avatar}</div>
+      <div class="teacher-name">${t.name}</div>
+      <div class="teacher-subject">${t.subject}</div>
+      <div class="teacher-dept">${t.dept}</div>
+      <div class="selected-badge hidden" id="badge-${t.id}">✓ SELECTED</div>
+    </div>
+  `).join('');
+}
+
+function selectTeacher(id) {
+  DB.selectedTeacher = TEACHERS.find(t => t.id === id);
+  document.querySelectorAll('.teacher-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('[id^="badge-"]').forEach(b => b.classList.add('hidden'));
+  document.getElementById('tc-'+id).classList.add('selected');
+  document.getElementById('badge-'+id).classList.remove('hidden');
+}
+
+function doSelectTeacher() {
+  const err = document.getElementById('teacher-err');
+  if (!DB.selectedTeacher) { err.style.display='block'; return; }
+  err.style.display='none';
+  setupAnalyzer();
+  goTo('page-analyze');
+}
+
+/* ─────────────────────────────────────────────────────────
+   ANALYZER SETUP
+───────────────────────────────────────────────────────── */
+function setupAnalyzer() {
+  const t = DB.selectedTeacher;
+  document.getElementById('analyze-avatar').textContent = t.avatar;
+  document.getElementById('analyze-name').textContent = t.name;
+  document.getElementById('analyze-subject').textContent = t.subject + ' · ' + t.dept;
+
+  // Build rating sliders
+  const wrap = document.getElementById('sliders-wrap');
+  wrap.innerHTML = RATING_CRITERIA.map(c => `
+    <div style="margin-bottom:14px;">
+      <div class="gbar-label">
+        <span>${c.icon} ${c.label}</span>
+        <span id="sv-${c.id}" style="color:var(--accent); font-family:'Orbitron',sans-serif;">5</span>
+      </div>
+      <input type="range" min="1" max="10" value="5" id="sr-${c.id}"
+        oninput="document.getElementById('sv-${c.id}').textContent=this.value"
+        style="width:100%; accent-color:var(--accent); cursor:pointer; margin-top:4px;">
+    </div>
+  `).join('');
+
+  // Reset state
+  pitchHistory = []; sessionLogs = []; peakCount = 0;
+  liveVoice = 0; liveEmotion = 0; liveEnergy = 0;
+  document.getElementById('logWrap').innerHTML = '<div class="log-row"><span class="lt">00:00</span><span class="ltag tn">INFO</span><span>Session initialized — waiting for input</span></div>';
+  resetMetricDisplays();
+  drawIdleWave();
+}
+
+/* ─────────────────────────────────────────────────────────
+   MICROPHONE
+───────────────────────────────────────────────────────── */
+async function toggleMic() {
+  if (isRecording) { stopRecording(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    startRecording(stream);
+  } catch(e) {
+    addLog('ERR', 'Microphone access denied — using simulation mode', 'tr');
+    startSimulationMode();
+  }
+}
+
+function startRecording(stream) {
+  isRecording = true;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  source = audioCtx.createMediaStreamSource(stream);
+  source.connect(analyser);
+
+  document.getElementById('micBtn').classList.add('recording');
+  document.getElementById('micBtn').setAttribute('aria-label','Stop recording');
+  document.getElementById('micStatus').textContent = 'RECORDING IN PROGRESS';
+  document.getElementById('recTimer').style.display = 'block';
+
+  startTimer();
+  drawWaveform();
+  startAnalysisLoop();
+  addLog('REC', 'Recording started', 'ts');
+}
+
+function startSimulationMode() {
+  isRecording = true;
+  document.getElementById('micBtn').classList.add('recording');
+  document.getElementById('micStatus').textContent = 'SIMULATION MODE ACTIVE';
+  document.getElementById('recTimer').style.display = 'block';
+  startTimer();
+  drawSimWave();
+  startAnalysisLoop();
+  addLog('SIM', 'Simulation mode — mic unavailable', 'tt');
+}
+
+function stopRecording() {
+  isRecording = false;
+  clearInterval(timerInterval);
+  clearInterval(analysisInterval);
+  cancelAnimationFrame(animFrame);
+
+  if (source) { try { source.disconnect(); } catch(e){} }
+  if (audioCtx) { try { audioCtx.close(); } catch(e){} }
+  audioCtx = null; analyser = null; source = null;
+
+  document.getElementById('micBtn').classList.remove('recording');
+  document.getElementById('micBtn').setAttribute('aria-label','Start recording');
+  document.getElementById('micStatus').textContent = 'RECORDING COMPLETE — READY TO SUBMIT';
+
+  addLog('DONE', 'Recording stopped', 'ts');
+  drawIdleWave();
+}
+
+/* ─────────────────────────────────────────────────────────
+   TIMER
+───────────────────────────────────────────────────────── */
+function startTimer() {
+  recSeconds = 0;
+  timerInterval = setInterval(() => {
+    recSeconds++;
+    const m = String(Math.floor(recSeconds/60)).padStart(2,'0');
+    const s = String(recSeconds%60).padStart(2,'0');
+    document.getElementById('recTimer').textContent = m+':'+s;
+  }, 1000);
+}
+
+function fmtTime(sec) {
+  return String(Math.floor(sec/60)).padStart(2,'0') + ':' + String(sec%60).padStart(2,'0');
+}
+
+/* ─────────────────────────────────────────────────────────
+   WAVEFORM DRAWING
+───────────────────────────────────────────────────────── */
+function drawWaveform() {
+  const cv = document.getElementById('waveCV');
+  const ctx = cv.getContext('2d');
+  cv.width = cv.offsetWidth * devicePixelRatio;
+  cv.height = cv.offsetHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = cv.offsetWidth, H = cv.offsetHeight;
+
+  function draw() {
+    if (!isRecording || !analyser) return;
+    animFrame = requestAnimationFrame(draw);
+    const buf = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(buf);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(0,0,W,H);
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(0,229,255,0.8)';
+    ctx.lineWidth = 1.5;
+    const step = W / buf.length;
+    for (let i=0;i<buf.length;i++) {
+      const y = (buf[i]/128.0) * (H/2);
+      i===0 ? ctx.moveTo(0,y) : ctx.lineTo(i*step, y);
+    }
+    ctx.stroke();
+  }
+  draw();
+}
+
+function drawSimWave() {
+  const cv = document.getElementById('waveCV');
+  const ctx = cv.getContext('2d');
+  cv.width = cv.offsetWidth * devicePixelRatio;
+  cv.height = cv.offsetHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = cv.offsetWidth, H = cv.offsetHeight;
+  let t = 0;
+
+  function draw() {
+    if (!isRecording) return;
+    animFrame = requestAnimationFrame(draw);
+    t += 0.05;
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(0,0,W,H);
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(0,229,255,0.7)';
+    ctx.lineWidth = 1.5;
+    for (let i=0;i<W;i++) {
+      const y = H/2 + Math.sin(i*0.05+t)*15 + Math.sin(i*0.02+t*0.7)*8 + (Math.random()-0.5)*3;
+      i===0 ? ctx.moveTo(i,y) : ctx.lineTo(i,y);
+    }
+    ctx.stroke();
+  }
+  draw();
+}
+
+function drawIdleWave() {
+  const cv = document.getElementById('waveCV');
+  const ctx = cv.getContext('2d');
+  cv.width = cv.offsetWidth * devicePixelRatio;
+  cv.height = cv.offsetHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = cv.offsetWidth, H = cv.offsetHeight;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(0,0,W,H);
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(0,229,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.moveTo(0,H/2); ctx.lineTo(W,H/2);
+  ctx.stroke();
+}
+
+/* ─────────────────────────────────────────────────────────
+   PITCH GRAPH
+───────────────────────────────────────────────────────── */
+function drawPitchGraph() {
+  const cv = document.getElementById('pitchGraph');
+  const ctx = cv.getContext('2d');
+  cv.width = cv.offsetWidth * devicePixelRatio;
+  cv.height = cv.offsetHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = cv.offsetWidth, H = cv.offsetHeight;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(0,0,W,H);
+  if (pitchHistory.length < 2) return;
+
+  const maxV = Math.max(...pitchHistory, 1);
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(0,229,255,0.8)';
+  ctx.lineWidth = 1.5;
+  pitchHistory.forEach((v,i) => {
+    const x = (i / (pitchHistory.length-1)) * W;
+    const y = H - (v/maxV) * H * 0.85 - H*0.05;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  // Fill under line
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+  ctx.fillStyle = 'rgba(0,229,255,0.05)'; ctx.fill();
+}
+
+/* ─────────────────────────────────────────────────────────
+   NOISE CANVAS
+───────────────────────────────────────────────────────── */
+function drawNoise(level) {
+  const cv = document.getElementById('noiseCv');
+  const ctx = cv.getContext('2d');
+  cv.width = cv.offsetWidth * devicePixelRatio;
+  cv.height = cv.offsetHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const W = cv.offsetWidth, H = cv.offsetHeight;
+  const bars = 40;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(0,0,W,H);
+  for (let i=0;i<bars;i++) {
+    const h = (Math.random() * level * H * 0.8) + 2;
+    const hue = level > 0.7 ? 'var(--accent2)' : level > 0.4 ? 'var(--warn)' : 'var(--accent3)';
+    ctx.fillStyle = level > 0.7 ? 'rgba(255,71,87,0.6)' : level > 0.4 ? 'rgba(255,165,2,0.6)' : 'rgba(46,213,115,0.6)';
+    ctx.fillRect(i*(W/bars), H-h, (W/bars)-1, h);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   ANALYSIS LOOP (simulated AI scoring)
+───────────────────────────────────────────────────────── */
+function startAnalysisLoop() {
+  let tick = 0;
+  analysisInterval = setInterval(() => {
+    tick++;
+
+    // Simulated voice metrics
+    const vol = 30 + Math.random()*50;
+    const pitch = 100 + Math.random()*200;
+    const clarity = Math.round(60 + Math.random()*35);
+    const noiseLevel = Math.random()*0.6;
+
+    pitchHistory.push(pitch);
+    if (pitchHistory.length > 60) pitchHistory.shift();
+
+    // Scores
+    liveVoice = Math.min(100, Math.round(clarity * 0.6 + (vol/80)*40));
+    liveEmotion = Math.round(50 + Math.random()*45);
+    liveEnergy = Math.round(40 + Math.random()*55);
+    const overall = Math.round((liveVoice + liveEmotion + liveEnergy) / 3);
+
+    // Volume metrics
+    document.getElementById('m-vol').textContent = Math.round(vol-80);
+    document.getElementById('m-pitch').textContent = Math.round(pitch);
+    document.getElementById('m-clarity').textContent = clarity;
+
+    // Gauges
+    const tone = Math.round(55 + Math.random()*40);
+    const pace = Math.round(50 + Math.random()*45);
+    const energy = Math.round(45 + Math.random()*50);
+    setGauge('tone', tone, 'var(--accent)');
+    setGauge('pace', pace, 'var(--accent3)');
+    setGauge('energy', energy, 'var(--warn)');
+
+    // Noise
+    drawNoise(noiseLevel);
+    const ambient = noiseLevel < 0.3 ? 'LOW' : noiseLevel < 0.6 ? 'MED' : 'HIGH';
+    document.getElementById('m-ambient').textContent = ambient;
+    document.getElementById('m-ambient').style.color = noiseLevel < 0.3 ? 'var(--accent3)' : noiseLevel < 0.6 ? 'var(--warn)' : 'var(--accent2)';
+    if (noiseLevel > 0.7) { peakCount++; document.getElementById('m-peaks').textContent = peakCount; }
+    document.getElementById('m-snr').textContent = Math.round(15 + Math.random()*20);
+
+    // Scores
+    document.getElementById('sc-voice').textContent = liveVoice;
+    document.getElementById('sc-emotion').textContent = liveEmotion;
+    document.getElementById('sc-energy').textContent = liveEnergy;
+    document.getElementById('scoreNum').textContent = overall;
+    const scoreCircle = document.getElementById('scoreCircle');
+    scoreCircle.style.borderColor = overall > 75 ? 'var(--accent3)' : overall > 50 ? 'var(--warn)' : 'var(--accent2)';
+    scoreCircle.style.boxShadow = `0 0 20px ${overall > 75 ? 'rgba(46,213,115,0.3)' : overall > 50 ? 'rgba(255,165,2,0.3)' : 'rgba(255,71,87,0.2)'}`;
+    document.getElementById('scoreNum').style.color = overall > 75 ? 'var(--accent3)' : overall > 50 ? 'var(--warn)' : 'var(--accent2)';
+
+    // Emotion pills
+    updateEmotionPills(energy, tone, pace);
+
+    // Intention
+    updateIntention(overall);
+
+    // Pitch graph
+    drawPitchGraph();
+
+    // Log events
+    if (tick % 5 === 0) {
+      const logTypes = [
+        ['SPCH','Speech pattern detected — fluency nominal','ts'],
+        ['TONE','Tonal variation in normal range','ts'],
+        ['PEAK','Energy peak detected','tt'],
+        ['CLTY','Clarity dip — possible background noise','tt'],
+        ['ENGG','Strong engagement signal','ts'],
+      ];
+      const ev = logTypes[Math.floor(Math.random()*logTypes.length)];
+      addLog(ev[0], ev[1], ev[2]);
+    }
+  }, 800);
+}
+
+function setGauge(id, val, color) {
+  document.getElementById('g-'+id).textContent = val+'%';
+  const fill = document.getElementById('gf-'+id);
+  fill.style.width = val+'%';
+  fill.style.background = color;
+}
+
+function updateEmotionPills(energy, tone, pace) {
+  const scores = {
+    'Confident': Math.round(tone*0.8 + Math.random()*20),
+    'Engaged': Math.round(energy*0.9 + Math.random()*10),
+    'Enthusiastic': Math.round(energy*0.7 + Math.random()*30),
+    'Nervous': Math.round(Math.random()*40),
+    'Monotone': Math.round(100 - tone*0.9),
+    'Inspiring': Math.round(pace*0.6 + Math.random()*40),
+  };
+  document.querySelectorAll('.epill').forEach(pill => {
+    const name = pill.dataset.e;
+    const score = Math.min(99, Math.max(1, scores[name] || 0));
+    pill.querySelector('.epct').textContent = score+'%';
+    pill.classList.toggle('on', score > 55);
+  });
+}
+
+function updateIntention(score) {
+  let intent;
+  if (score >= 80) intent = INTENTS[0];
+  else if (score >= 70) intent = INTENTS[5];
+  else if (score >= 60) intent = INTENTS[1];
+  else if (score >= 50) intent = INTENTS[2];
+  else if (score >= 35) intent = INTENTS[3];
+  else intent = INTENTS[4];
+
+  document.getElementById('intentEmoji').textContent = intent.emoji;
+  document.getElementById('intentLbl').textContent = intent.lbl;
+  document.getElementById('intentLbl').style.color = intent.color;
+  document.getElementById('intentDesc').textContent = intent.desc;
+  document.getElementById('intentBox').style.borderColor = intent.border;
+}
+
+/* ─────────────────────────────────────────────────────────
+   LOG
+───────────────────────────────────────────────────────── */
+function addLog(tag, msg, cls) {
+  const wrap = document.getElementById('logWrap');
+  const row = document.createElement('div');
+  row.className = 'log-row';
+  row.innerHTML = `<span class="lt">${fmtTime(recSeconds)}</span><span class="ltag ${cls}">${tag}</span><span>${msg}</span>`;
+  wrap.appendChild(row);
+  wrap.scrollTop = wrap.scrollHeight;
+  sessionLogs.push({ time: fmtTime(recSeconds), tag, msg });
+}
+
+/* ─────────────────────────────────────────────────────────
+   RESET
+───────────────────────────────────────────────────────── */
+function resetMetricDisplays() {
+  ['m-vol','m-pitch','m-clarity','m-peaks','m-snr','sc-voice','sc-emotion','sc-energy'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '—';
+  });
+  document.getElementById('scoreNum').textContent = '—';
+  document.getElementById('scoreNum').style.color = 'var(--dim)';
+  document.getElementById('scoreCircle').style.borderColor = 'var(--border2)';
+  document.getElementById('m-ambient').textContent = 'LOW';
+  setGauge('tone',0,'var(--accent)');
+  setGauge('pace',0,'var(--accent3)');
+  setGauge('energy',0,'var(--warn)');
+  document.getElementById('intentEmoji').textContent = '🔍';
+  document.getElementById('intentLbl').textContent = 'AWAITING INPUT';
+  document.getElementById('intentLbl').style.color = 'var(--dim)';
+  document.getElementById('intentDesc').textContent = 'Start recording to analyze';
+  document.getElementById('intentBox').style.borderColor = 'var(--border2)';
+  document.querySelectorAll('.epill').forEach(p => {
+    p.classList.remove('on');
+    p.querySelector('.epct').textContent = '0%';
+  });
+  recSeconds = 0;
+  document.getElementById('recTimer').style.display = 'none';
+  document.getElementById('recTimer').textContent = '00:00';
+  document.getElementById('micStatus').textContent = 'TAP TO BEGIN RECORDING';
+}
+
+function resetAnalysis() {
+  if (isRecording) stopRecording();
+  resetMetricDisplays();
+  pitchHistory = []; sessionLogs = []; peakCount = 0;
+  document.getElementById('logWrap').innerHTML = '<div class="log-row"><span class="lt">00:00</span><span class="ltag tn">INFO</span><span>Session reset — ready</span></div>';
+  drawIdleWave();
+  drawPitchGraph();
+  drawNoise(0);
+}
+
+/* ─────────────────────────────────────────────────────────
+   SUBMIT
+───────────────────────────────────────────────────────── */
+function submitAnalysis() {
+  if (isRecording) stopRecording();
+
+  const sliderAvg = RATING_CRITERIA.reduce((sum, c) => {
+    return sum + parseInt(document.getElementById('sr-'+c.id).value);
+  }, 0) / RATING_CRITERIA.length;
+
+  const voiceScore = liveVoice || Math.round(60 + Math.random()*30);
+  const emotionScore = liveEmotion || Math.round(55 + Math.random()*35);
+  const overall = Math.round((voiceScore + emotionScore + sliderAvg*10) / 3);
+
+  // Populate results page
+  const u = DB.currentUser;
+  const t = DB.selectedTeacher;
+  document.getElementById('result-info-bar').innerHTML = [
+    `${u.first} ${u.last}`, u.dept, t.name, t.subject,
+    `Session: ${fmtTime(recSeconds)}`
+  ].map(v => `<div class="info-tag">${v}</div>`).join('');
+
+  document.getElementById('final-score').textContent = overall;
+  document.getElementById('rt-voice').textContent = voiceScore;
+  document.getElementById('rt-emotion').textContent = emotionScore;
+  document.getElementById('rt-overall').textContent = overall;
+
+  // Stars
+  const stars = Math.round(overall / 20);
+  const starBar = document.getElementById('confetti-bar');
+  starBar.innerHTML = '';
+  for (let i=0;i<5;i++) {
+    const s = document.createElement('div');
+    s.className = 'conf-star';
+    s.style.animationDelay = (i*0.1)+'s';
+    s.textContent = i < stars ? '⭐' : '☆';
+    starBar.appendChild(s);
+  }
+
+  // Feedback
+  let msg = '';
+  if (overall >= 85) msg = `${t.name} delivered an exceptional session with outstanding clarity, engagement, and energy. Students clearly benefit from this level of instruction.`;
+  else if (overall >= 70) msg = `${t.name} showed strong instructional ability. The session maintained good momentum and student interest throughout.`;
+  else if (overall >= 55) msg = `${t.name} demonstrated solid teaching fundamentals. There's room to further enhance vocal engagement and student interaction.`;
+  else msg = `${t.name}'s session showed areas for growth in pacing and vocal energy. Feedback has been recorded for improvement planning.`;
+
+  document.getElementById('feedback-msg').textContent = msg;
+  goTo('page-done');
+}
+
+function startOver() {
+  resetAnalysis();
+  DB.selectedTeacher = null;
+  buildTeacherGrid();
+  goTo('page-teacher');
+}
+
+/* ─────────────────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────────────────── */
+window.addEventListener('load', () => {
+  drawIdleWave();
+  // Allow Enter key to submit forms
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const active = document.querySelector('.page.active');
+      if (active.id === 'page-register') doRegister();
+      else if (active.id === 'page-login') doLogin();
+    }
+  });
+});
+
+window.addEventListener('resize', () => {
+  if (!isRecording) { drawIdleWave(); drawPitchGraph(); drawNoise(0); }
+});
+</script>
+</body>
+</html>
